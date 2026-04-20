@@ -29,21 +29,21 @@ const slides: Slide[] = [
     type: "globe",
     title: "Supporting Members\nSince 2016",
     subtitle: "Over 10+ years of championing the rights and interests of buying agents across every major industry sector.",
-    bgImage: "https://images.pexels.com/photos/4481259/pexels-photo-4481259.jpeg?auto=compress&cs=tinysrgb&w=1920",
+    bgImage: "https://images.pexels.com/photos/10227059/pexels-photo-10227059.jpeg?auto=compress&cs=tinysrgb&w=1920",
   },
   {
     id: 2,
     type: "map",
     title: "Building Stronger\nTrade Relations",
     subtitle: "Fostering partnerships that drive growth, innovation, and excellence in India's thriving export ecosystem.",
-    bgImage: "https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=1920",
+    bgImage: "https://images.pexels.com/photos/7651924/pexels-photo-7651924.jpeg?auto=compress&cs=tinysrgb&w=1920",
   },
   {
     id: 3,
     type: "diamond",
     title: "Connecting the Buying agents\n Community",
     subtitle: "Bridging the gap between international buyers and Indian exporters with trust, expertise, and decades of industry knowledge.",
-    bgImage: "https://images.pexels.com/photos/1427107/pexels-photo-1427107.jpeg?auto=compress&cs=tinysrgb&w=1920",
+    bgImage: "https://images.pexels.com/photos/3769118/pexels-photo-3769118.jpeg?auto=compress&cs=tinysrgb&w=1920",
   },
 ]
 
