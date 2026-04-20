@@ -13,6 +13,7 @@ type Event = {
   location: string
   event_type: string
   image: string
+  reportLink?: string
 }
 
 const formatDate = (dateString: string) => {
@@ -53,12 +54,14 @@ function EventCard({ event }: { event: Event }) {
             <span className="line-clamp-1">{event.location}</span>
           </div>
         </div>
-        <Link
-          href={`/news/events`}
+        <a
+          href={event.reportLink?.trim() ? event.reportLink : "/news/events"}
+          target={event.reportLink?.trim() ? "_blank" : undefined}
+          rel={event.reportLink?.trim() ? "noreferrer noopener" : undefined}
           className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
         >
           Learn More <ArrowRight className="h-4 w-4" />
-        </Link>
+        </a>
       </div>
     </div>
   )
