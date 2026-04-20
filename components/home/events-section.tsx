@@ -74,6 +74,7 @@ export async function EventsSection() {
         location: e.event_location ?? "",
         event_type: e.event_type ?? "Event",
         image: e.event_image ?? defaultEvents[i % defaultEvents.length].image,
+        reportLink: e.view_report_link ?? e.report_link ?? "",
       }))
     }
   } catch (err) {
