@@ -299,27 +299,42 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
       setSubmitStatus("idle")
        setSubmitMessage("📧 Processing your application...")
 
-      // Convert files to base64
-      const convertFileToBase64 = (file: File | null): Promise<string | null> => {
-        return new Promise((resolve) => {
-          if (!file) {
-            resolve(null)
-            return
+      // Upload file to Supabase Storage
+      const uploadFileToStorage = async (file: File | null, folder: string): Promise<string | null> => {
+        if (!file) return null
+        
+        try {
+          const formDataFile = new FormData()
+          formDataFile.append("file", file)
+          formDataFile.append("folder", folder)
+          formDataFile.append("organizationName", formData.organizationName)
+          
+          const uploadResponse = await fetch("/api/upload-membership-file", {
+            method: "POST",
+            body: formDataFile,
+          })
+          
+          if (!uploadResponse.ok) {
+            console.error("Upload failed:", await uploadResponse.text())
+            return null
           }
-          const reader = new FileReader()
-          reader.onloadend = () => {
-            resolve(reader.result as string)
-          }
-          reader.readAsDataURL(file)
-        })
+          
+          const uploadData = await uploadResponse.json()
+          return uploadData.url || null
+        } catch (err) {
+          console.error("Upload error:", err)
+          return null
+        }
       }
 
-      const ceoPhotoBase64 = await convertFileToBase64(formData.ceoPhoto)
-      const companyStampBase64 = await convertFileToBase64(formData.companyStamp)
-      const finalCompanyStampBase64 = await convertFileToBase64(formData.finalCompanyStamp)
-      const selfDeclSignatureBase64 = await convertFileToBase64(formData.selfDeclSignature)
+      // Upload all files to Supabase Storage
+      setSubmitMessage("📤 Uploading documents...")
+      const ceoPhotoUrl = await uploadFileToStorage(formData.ceoPhoto, "ceo-photos")
+      const companyStampUrl = await uploadFileToStorage(formData.companyStamp, "company-stamps")
+      const finalCompanyStampUrl = await uploadFileToStorage(formData.finalCompanyStamp, "final-stamps")
+      const selfDeclSignatureUrl = await uploadFileToStorage(formData.selfDeclSignature, "signatures")
 
-      // Send email without PDF attachment
+      // Send email with URLs
       const response = await fetch("/api/send-membership-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -336,10 +351,10 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
             finalCompanyStamp: null,
             selfDeclSignature: null,
           },
-          ceoPhotoBase64,
-          companyStampBase64,
-          finalCompanyStampBase64,
-          selfDeclSignatureBase64,
+          ceoPhotoUrl,
+          companyStampUrl,
+          finalCompanyStampUrl,
+          selfDeclSignatureUrl,
         }),
       })
 

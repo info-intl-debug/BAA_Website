@@ -26,8 +26,16 @@ const formatDate = (dateString: string) => {
 }
 
 function EventCard({ event }: { event: Event }) {
+  const href = event.reportLink?.trim() ? event.reportLink : "/news/events"
+  const isExternalLink = event.reportLink?.trim() ? true : false
+
   return (
-    <div className="flex-shrink-0 w-[320px] rounded-xl overflow-hidden border border-border bg-card shadow-sm hover:shadow-lg transition-shadow duration-300 group">
+    <a
+      href={href}
+      target={isExternalLink ? "_blank" : undefined}
+      rel={isExternalLink ? "noreferrer noopener" : undefined}
+      className="flex-shrink-0 w-[320px] rounded-xl overflow-hidden border border-border bg-card shadow-sm hover:shadow-lg transition-shadow duration-300 group block cursor-pointer"
+    >
       <div className="relative h-64 overflow-hidden">
         <img
           src={event.image}
@@ -54,16 +62,11 @@ function EventCard({ event }: { event: Event }) {
             <span className="line-clamp-1">{event.location}</span>
           </div>
         </div>
-        <a
-          href={event.reportLink?.trim() ? event.reportLink : "/news/events"}
-          target={event.reportLink?.trim() ? "_blank" : undefined}
-          rel={event.reportLink?.trim() ? "noreferrer noopener" : undefined}
-          className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
-        >
+        <div className="inline-flex items-center gap-1.5 text-sm text-primary group-hover:text-primary/80 font-medium transition-colors pt-2">
           Learn More <ArrowRight className="h-4 w-4" />
-        </a>
+        </div>
       </div>
-    </div>
+    </a>
   )
 }
 

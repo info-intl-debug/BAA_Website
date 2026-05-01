@@ -11,10 +11,10 @@ export async function POST(request: NextRequest) {
       category, 
       formType, 
       phone,
-      ceoPhotoBase64,
-      companyStampBase64,
-      finalCompanyStampBase64,
-      selfDeclSignatureBase64,
+      ceoPhotoUrl,
+      companyStampUrl,
+      finalCompanyStampUrl,
+      selfDeclSignatureUrl,
     } = body
 
     // Function to format form data into HTML
@@ -138,31 +138,31 @@ export async function POST(request: NextRequest) {
         
         <h3 style="color: #0066cc; margin-top: 30px;">📸 Uploaded Documents & Images</h3>
         <div style="margin: 20px 0; padding: 20px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 8px;">
-          ${ceoPhotoBase64 ? `
+          ${ceoPhotoUrl ? `
             <div style="margin-bottom: 20px;">
               <h4 style="color: #333; margin-bottom: 10px;">CEO/Representative Photo:</h4>
-              <img src="${ceoPhotoBase64}" style="max-width: 300px; max-height: 400px; border: 1px solid #ddd; border-radius: 4px;" alt="CEO Photo" />
+              <img src="${ceoPhotoUrl}" style="max-width: 300px; max-height: 400px; border: 1px solid #ddd; border-radius: 4px;" alt="CEO Photo" />
             </div>
           ` : '<p style="color: #999;">No CEO photo uploaded</p>'}
           
-          ${companyStampBase64 ? `
+          ${companyStampUrl ? `
             <div style="margin-bottom: 20px;">
               <h4 style="color: #333; margin-bottom: 10px;">Company Stamp:</h4>
-              <img src="${companyStampBase64}" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" alt="Company Stamp" />
+              <img src="${companyStampUrl}" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" alt="Company Stamp" />
             </div>
           ` : ''}
           
-          ${finalCompanyStampBase64 ? `
+          ${finalCompanyStampUrl ? `
             <div style="margin-bottom: 20px;">
               <h4 style="color: #333; margin-bottom: 10px;">Final Company Stamp:</h4>
-              <img src="${finalCompanyStampBase64}" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" alt="Final Stamp" />
+              <img src="${finalCompanyStampUrl}" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" alt="Final Stamp" />
             </div>
           ` : ''}
           
-          ${selfDeclSignatureBase64 ? `
+          ${selfDeclSignatureUrl ? `
             <div>
               <h4 style="color: #333; margin-bottom: 10px;">Signature:</h4>
-              <img src="${selfDeclSignatureBase64}" style="max-width: 300px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;" alt="Signature" />
+              <img src="${selfDeclSignatureUrl}" style="max-width: 300px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;" alt="Signature" />
             </div>
           ` : ''}
         </div>
@@ -209,10 +209,10 @@ export async function POST(request: NextRequest) {
             phone: phone,
             category: category,
             form_data: formDataComplete,
-            ceo_photo: ceoPhotoBase64 || null,
-            company_stamp: companyStampBase64 || null,
-            final_company_stamp: finalCompanyStampBase64 || null,
-            signature: selfDeclSignatureBase64 || null,
+            ceo_photo_url: ceoPhotoUrl || null,
+            company_stamp_url: companyStampUrl || null,
+            final_company_stamp_url: finalCompanyStampUrl || null,
+            signature_url: selfDeclSignatureUrl || null,
             submitted_at: new Date().toISOString(),
             status: "submitted",
           })
@@ -259,10 +259,10 @@ export async function POST(request: NextRequest) {
             phone: phone,
             category: category,
             form_data: formDataComplete,
-            ceo_photo: ceoPhotoBase64 || null,
-            company_stamp: companyStampBase64 || null,
-            final_company_stamp: finalCompanyStampBase64 || null,
-            signature: selfDeclSignatureBase64 || null,
+            ceo_photo_url: ceoPhotoUrl || null,
+            company_stamp_url: companyStampUrl || null,
+            final_company_stamp_url: finalCompanyStampUrl || null,
+            signature_url: selfDeclSignatureUrl || null,
             submitted_at: new Date().toISOString(),
             status: "submitted",
           })

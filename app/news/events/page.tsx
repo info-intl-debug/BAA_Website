@@ -209,15 +209,16 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               {/* Regular Events Grid */}
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-6 mb-12">
                 {displayEvents.map((event) => (
-                  <article
+                  <Link
                     key={event.id}
-                    className="rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow bg-white"
+                    href={`/news/events?show=${event.id}`}
+                    className="rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow bg-white block group"
                   >
                     <div className="aspect-[4/3] overflow-hidden">
                       <img
                         src={event.image || "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg"}
                         alt={event.title}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
                     <div className="p-4">
@@ -229,14 +230,17 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                         <MapPin className="h-3 w-3" />
                         <span>{event.location}</span>
                       </div>
-                      <h2 className="font-semibold text-foreground text-sm leading-snug mb-1">
+                      <h2 className="font-semibold text-foreground text-sm leading-snug mb-1 group-hover:text-primary transition-colors">
                         {event.title}
                       </h2>
                       <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
                         {event.description}
                       </p>
+                      <div className="mt-3 pt-3 border-t border-border text-xs font-medium text-primary group-hover:underline">
+                        View Details →
+                      </div>
                     </div>
-                  </article>
+                  </Link>
                 ))}
               </div>
 

@@ -11,11 +11,11 @@ CREATE TABLE IF NOT EXISTS membership_applications (
   -- Form Data (JSON - contains all form fields)
   form_data JSONB NOT NULL,
   
-  -- Uploaded Images (stored as base64 data URLs)
-  ceo_photo TEXT, -- Base64 encoded image
-  company_stamp TEXT, -- Base64 encoded image
-  final_company_stamp TEXT, -- Base64 encoded image
-  signature TEXT, -- Base64 encoded signature
+  -- Uploaded Images (stored as Supabase Storage URLs)
+  ceo_photo_url VARCHAR(500), -- Supabase Storage URL
+  company_stamp_url VARCHAR(500), -- Supabase Storage URL
+  final_company_stamp_url VARCHAR(500), -- Supabase Storage URL
+  signature_url VARCHAR(500), -- Supabase Storage URL
   
   -- Status Tracking
   status VARCHAR(50) DEFAULT 'submitted', -- 'submitted', 'under-review', 'approved', 'rejected'
@@ -81,8 +81,8 @@ LIMIT 50;
 -- Comments on table and columns for documentation
 COMMENT ON TABLE membership_applications IS 'Stores all membership application submissions with form data and uploaded documents';
 COMMENT ON COLUMN membership_applications.form_data IS 'Complete form submission data stored as JSON for flexibility';
-COMMENT ON COLUMN membership_applications.ceo_photo IS 'CEO/Representative photo stored as base64 data URL';
-COMMENT ON COLUMN membership_applications.company_stamp IS 'Company stamp/seal image stored as base64 data URL';
-COMMENT ON COLUMN membership_applications.final_company_stamp IS 'Final company stamp image stored as base64 data URL';
-COMMENT ON COLUMN membership_applications.signature IS 'Digital signature stored as base64 data URL';
+COMMENT ON COLUMN membership_applications.ceo_photo_url IS 'CEO/Representative photo URL from Supabase Storage';
+COMMENT ON COLUMN membership_applications.company_stamp_url IS 'Company stamp/seal image URL from Supabase Storage';
+COMMENT ON COLUMN membership_applications.final_company_stamp_url IS 'Final company stamp image URL from Supabase Storage';
+COMMENT ON COLUMN membership_applications.signature_url IS 'Digital signature URL from Supabase Storage';
 COMMENT ON COLUMN membership_applications.status IS 'Current status of the application (submitted, under-review, approved, rejected)';
