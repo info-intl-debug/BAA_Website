@@ -141,6 +141,12 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
     confirmationText: "",
     selfDeclSignature: null as File | null,
 
+    // PDF Certificates (for Members & Associates)
+    iecCertificatePdf: null as File | null,
+    panCardPdf: null as File | null,
+    gstCertificatePdf: null as File | null,
+    caCertificatePdf: null as File | null,
+
     // INSTITUTIONAL SPECIFIC FIELDS
     // Basic Details
     institutionName: "",
@@ -261,23 +267,59 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
   const handleOnlineSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Basic validation
-    if (!formData.organizationName || !formData.ceoName || !formData.ceoEmail || !formData.ceoMobile) {
+    // Detailed validation with specific error messages
+    const missingFields: string[] = []
+    
+    if (!formData.organizationName) missingFields.push("Organization Name")
+    if (!formData.ceoName) missingFields.push("CEO/Director Name")
+    if (!formData.ceoEmail) missingFields.push("CEO/Director Email")
+    if (!formData.ceoMobile) missingFields.push("CEO/Director Mobile Number")
+    
+    if (missingFields.length > 0) {
       setSubmitStatus("error")
-      setSubmitMessage("❌ Please fill in all required contact information")
+      setSubmitMessage(`❌ Missing required information: ${missingFields.join(", ")}. Please fill Step 1 & Step 2.`)
+      window.scrollTo(0, 0)
       return
     }
 
-    if (!formData.regAddress1 || !formData.regCity || !formData.regPinCode || !formData.regCountry) {
+    const addressMissingFields: string[] = []
+    if (!formData.regAddress1) addressMissingFields.push("Address Line 1")
+    if (!formData.regCity) addressMissingFields.push("City")
+    if (!formData.regPinCode) addressMissingFields.push("Pin Code")
+    if (!formData.regCountry) addressMissingFields.push("Country")
+
+    if (addressMissingFields.length > 0) {
       setSubmitStatus("error")
-      setSubmitMessage("❌ Please fill in all required address information")
+      setSubmitMessage(`❌ Missing address information: ${addressMissingFields.join(", ")}. Please fill Step 3.`)
+      window.scrollTo(0, 0)
       return
     }
 
     try {
       setSubmitStatus("idle")
-      setSubmitMessage("📧 Sending your application...")
+       setSubmitMessage("📧 Processing your application...")
 
+      // Convert files to base64
+      const convertFileToBase64 = (file: File | null): Promise<string | null> => {
+        return new Promise((resolve) => {
+          if (!file) {
+            resolve(null)
+            return
+          }
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            resolve(reader.result as string)
+          }
+          reader.readAsDataURL(file)
+        })
+      }
+
+      const ceoPhotoBase64 = await convertFileToBase64(formData.ceoPhoto)
+      const companyStampBase64 = await convertFileToBase64(formData.companyStamp)
+      const finalCompanyStampBase64 = await convertFileToBase64(formData.finalCompanyStamp)
+      const selfDeclSignatureBase64 = await convertFileToBase64(formData.selfDeclSignature)
+
+      // Send email without PDF attachment
       const response = await fetch("/api/send-membership-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -287,7 +329,17 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
           phone: formData.ceoMobile,
           category: selectedCategory,
           formType: "comprehensive",
-          formDataComplete: formData,
+          formDataComplete: {
+            ...formData,
+            ceoPhoto: null,
+            companyStamp: null,
+            finalCompanyStamp: null,
+            selfDeclSignature: null,
+          },
+          ceoPhotoBase64,
+          companyStampBase64,
+          finalCompanyStampBase64,
+          selfDeclSignatureBase64,
         }),
       })
 
@@ -297,17 +349,14 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
       }
 
       setSubmitStatus("success")
-      setSubmitMessage("✅ Application sent successfully! Check your email for confirmation.")
-      
-      setTimeout(() => {
-        setFormStep(1)
-        setSubmitStatus("idle")
-        onClose?.()
-      }, 2000)
+      setSubmitMessage("✅ FORM SUBMITTED SUCCESSFULLY!\n\nYour membership application has been submitted. We will review your application and contact you within 3-5 business days.")
+      window.scrollTo(0, 0)
+      // Don't auto-close - user will manually close
     } catch (error) {
       console.error("Submit error:", error)
       setSubmitStatus("error")
-      setSubmitMessage(`❌ ${error instanceof Error ? error.message : "Failed to send application"}`)
+      setSubmitMessage(`❌ Error: ${error instanceof Error ? error.message : "Failed to send application"}`)
+      window.scrollTo(0, 0)
     }
   }
 
@@ -322,6 +371,7 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
     "Photo",
     "Associations",
     "Categories",
+    "Certificates",
     "References",
     "Payment",
     "Communication",
@@ -350,16 +400,16 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
     <div className="max-w-5xl mx-auto">
       {/* Status Messages */}
       {submitStatus === "success" && (
-        <Alert className="mb-6 bg-green-50 border-green-200">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">{submitMessage}</AlertDescription>
+        <Alert className="mb-6 bg-green-50 border-2 border-green-400 rounded-lg">
+          <CheckCircle className="h-5 w-5 text-green-600 mt-1" />
+          <AlertDescription className="text-green-800 font-semibold text-lg ml-2 whitespace-pre-line">{submitMessage}</AlertDescription>
         </Alert>
       )}
-
+ 
       {submitStatus === "error" && (
-        <Alert className="mb-6 bg-red-50 border-red-200">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">{submitMessage}</AlertDescription>
+        <Alert className="mb-6 bg-red-50 border-2 border-red-400 rounded-lg">
+          <AlertCircle className="h-5 w-5 text-red-600 mt-1" />
+          <AlertDescription className="text-red-800 font-semibold ml-2 whitespace-pre-line">{submitMessage}</AlertDescription>
         </Alert>
       )}
 
@@ -426,7 +476,7 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
       )}
 
       {/* STEP 2: Comprehensive Online Form */}
-      {step === "online" && (
+      {step === "online" && submitStatus !== "success" && (
         <form onSubmit={handleOnlineSubmit} className="space-y-8">
           <Button
             type="button"
@@ -1083,10 +1133,111 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
             </Card>
           )}
 
-          {/* Section 10: References */}
+          {/* Section 10: Certificates */}
           {selectedCategory !== "institutional" && formStep === 10 && (
             <Card className="p-6 space-y-6">
-              <h3 className="text-xl font-bold text-foreground">10. References</h3>
+              <h3 className="text-xl font-bold text-foreground">10. Certificates & Documents</h3>
+              
+              <p className="text-sm text-muted-foreground mb-6">Please upload the following certificates as PDF files. These are required for verification.</p>
+              
+              {/* IEC Certificate */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">IEC Certificate *</Label>
+                <div
+                  className="border-2 border-dashed border-[#E8520A] rounded-lg p-6 cursor-pointer hover:bg-[#FFF5F0] transition-colors"
+                  onClick={() => document.getElementById("iecCertificateInput")?.click()}
+                >
+                  <Upload className="h-12 w-12 mx-auto mb-2" style={{ color: "#E8520A" }} />
+                  <p className="font-semibold text-foreground">Click to upload PDF</p>
+                  <p className="text-xs text-muted-foreground">PDF only, max 5MB</p>
+                  <input
+                    type="file"
+                    id="iecCertificateInput"
+                    className="hidden"
+                    accept=".pdf"
+                    onChange={(e) => handleFileChange(e, "iecCertificatePdf")}
+                  />
+                </div>
+                {formData.iecCertificatePdf && (
+                  <p className="text-sm text-green-600">✓ {formData.iecCertificatePdf.name} selected</p>
+                )}
+              </div>
+              
+              {/* PAN Card */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">PAN Card *</Label>
+                <div
+                  className="border-2 border-dashed border-[#E8520A] rounded-lg p-6 cursor-pointer hover:bg-[#FFF5F0] transition-colors"
+                  onClick={() => document.getElementById("panCardInput")?.click()}
+                >
+                  <Upload className="h-12 w-12 mx-auto mb-2" style={{ color: "#E8520A" }} />
+                  <p className="font-semibold text-foreground">Click to upload PDF</p>
+                  <p className="text-xs text-muted-foreground">PDF only, max 5MB</p>
+                  <input
+                    type="file"
+                    id="panCardInput"
+                    className="hidden"
+                    accept=".pdf"
+                    onChange={(e) => handleFileChange(e, "panCardPdf")}
+                  />
+                </div>
+                {formData.panCardPdf && (
+                  <p className="text-sm text-green-600">✓ {formData.panCardPdf.name} selected</p>
+                )}
+              </div>
+              
+              {/* GST Certificate */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">GST Certificate *</Label>
+                <div
+                  className="border-2 border-dashed border-[#E8520A] rounded-lg p-6 cursor-pointer hover:bg-[#FFF5F0] transition-colors"
+                  onClick={() => document.getElementById("gstCertificateInput")?.click()}
+                >
+                  <Upload className="h-12 w-12 mx-auto mb-2" style={{ color: "#E8520A" }} />
+                  <p className="font-semibold text-foreground">Click to upload PDF</p>
+                  <p className="text-xs text-muted-foreground">PDF only, max 5MB</p>
+                  <input
+                    type="file"
+                    id="gstCertificateInput"
+                    className="hidden"
+                    accept=".pdf"
+                    onChange={(e) => handleFileChange(e, "gstCertificatePdf")}
+                  />
+                </div>
+                {formData.gstCertificatePdf && (
+                  <p className="text-sm text-green-600">✓ {formData.gstCertificatePdf.name} selected</p>
+                )}
+              </div>
+              
+              {/* CA Certificate */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">CA Certificate *</Label>
+                <div
+                  className="border-2 border-dashed border-[#E8520A] rounded-lg p-6 cursor-pointer hover:bg-[#FFF5F0] transition-colors"
+                  onClick={() => document.getElementById("caCertificateInput")?.click()}
+                >
+                  <Upload className="h-12 w-12 mx-auto mb-2" style={{ color: "#E8520A" }} />
+                  <p className="font-semibold text-foreground">Click to upload PDF</p>
+                  <p className="text-xs text-muted-foreground">PDF only, max 5MB</p>
+                  <input
+                    type="file"
+                    id="caCertificateInput"
+                    className="hidden"
+                    accept=".pdf"
+                    onChange={(e) => handleFileChange(e, "caCertificatePdf")}
+                  />
+                </div>
+                {formData.caCertificatePdf && (
+                  <p className="text-sm text-green-600">✓ {formData.caCertificatePdf.name} selected</p>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Section 11: References */}
+          {selectedCategory !== "institutional" && formStep === 11 && (
+            <Card className="p-6 space-y-6">
+              <h3 className="text-xl font-bold text-foreground">11. References</h3>
               
               {formData.references.map((ref: any, index: number) => (
                 <div key={index} className="border-l-4 border-[#E8520A] pl-4 space-y-4">
@@ -1133,9 +1284,9 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
           )}
 
           {/* Section 11: Payment Details */}
-          {selectedCategory !== "institutional" && formStep === 11 && (
+          {selectedCategory !== "institutional" && formStep === 12 && (
             <Card className="p-6 space-y-6">
-              <h3 className="text-xl font-bold text-foreground">11. Payment Details</h3>
+              <h3 className="text-xl font-bold text-foreground">12. Payment Details</h3>
               
               <div className="space-y-4">
                 <Label className="text-base font-semibold">Payment Mode</Label>
@@ -1253,9 +1404,9 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
           )}
 
           {/* Section 13: Declaration */}
-          {selectedCategory !== "institutional" && formStep === 13 && (
+          {selectedCategory !== "institutional" && formStep === 14 && (
             <Card className="p-6 space-y-6">
-              <h3 className="text-xl font-bold text-foreground">13. Declaration</h3>
+              <h3 className="text-xl font-bold text-foreground">14. Declaration</h3>
               
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -1803,7 +1954,10 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
             <Button
               type="button"
               variant="outline"
-              onClick={() => setFormStep(Math.max(1, formStep - 1))}
+              onClick={(e) => {
+                e.preventDefault()
+                setFormStep(Math.max(1, formStep - 1))
+              }}
               disabled={formStep === 1}
               className="rounded-full"
             >
@@ -1826,7 +1980,11 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
             ) : (
               <Button
                 type="button"
-                onClick={() => setFormStep(Math.min(formSections.length, formStep + 1))}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setFormStep(Math.min(formSections.length, formStep + 1))
+                }}
                 className="rounded-full"
                 style={{ backgroundColor: "#E8520A", color: "#fff" }}
               >
@@ -1909,6 +2067,58 @@ export function MembershipFormComprehensive({ onClose, selectedTier }: { onClose
           </Card>
         </div>
       )}
+
+      {/* SUCCESS SCREEN */}
+      {submitStatus === "success" && (
+        <div className="space-y-6">
+          <Card className="p-8 md:p-12 border-2 border-green-400 bg-green-50">
+            <div className="text-center space-y-6">
+              <div className="flex justify-center">
+                <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle className="w-12 h-12 text-green-600" />
+                </div>
+              </div>
+              
+              <div>
+                <h2 className="text-3xl font-bold text-green-800 mb-3">Form Submitted Successfully!</h2>
+                <p className="text-lg text-green-700 whitespace-pre-line mb-6">{submitMessage}</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg border border-green-200 text-left">
+                <h3 className="font-bold text-foreground mb-4">What happens next?</h3>
+                <ul className="space-y-3 text-sm text-muted-foreground">
+                  <li className="flex gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Our team will review your complete application</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>We'll contact you via email within 3-5 business days</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>Make sure to check your email inbox and spam folder</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Button
+                onClick={() => {
+                  setFormStep(1)
+                  setSubmitStatus("idle")
+                  onClose?.()
+                }}
+                size="lg"
+                className="rounded-full font-bold mt-6"
+                style={{ backgroundColor: "#E8520A", color: "#fff" }}
+              >
+                Close
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
+

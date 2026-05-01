@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { InfiniteScroller } from "@/components/home/events-scroller"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 const defaultEvents = [
   {
@@ -97,6 +99,14 @@ export async function EventsSection() {
       </div>
 
       <InfiniteScroller events={displayEvents} />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-12 flex justify-center">
+        <Link href="/news/events">
+          <Button size="lg" className="px-8">
+            Explore More Events
+          </Button>
+        </Link>
+      </div>
     </section>
   )
 }

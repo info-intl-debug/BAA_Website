@@ -1,80 +1,184 @@
 import { NextRequest, NextResponse } from "next/server"
-import { jsPDF } from "jspdf"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { fullName, email, uploadedFileName, uploadedFileBase64 } = body
+    const { 
+      fullName, 
+      email, 
+      formDataComplete, 
+      category, 
+      formType, 
+      phone,
+      ceoPhotoBase64,
+      companyStampBase64,
+      finalCompanyStampBase64,
+      selfDeclSignatureBase64,
+    } = body
 
-    // Generate blank template PDF
-    const blankDoc = new jsPDF()
-    const pageWidth = blankDoc.internal.pageSize.getWidth()
-    const pageHeight = blankDoc.internal.pageSize.getHeight()
-    let yPosition = 10
-
-    const addText = (text: string, size: number = 11, style: "normal" | "bold" = "normal", color = [0, 0, 0]) => {
-      blankDoc.setFontSize(size)
-      blankDoc.setTextColor(color[0], color[1], color[2])
-      blankDoc.setFont("helvetica", style)
-      blankDoc.text(text, 10, yPosition)
-      yPosition += style === "bold" ? 7 : 5
+    // Function to format form data into HTML
+    const formatFormDataHTML = () => {
+      if (!formDataComplete) return ""
+      
+      const data = formDataComplete
+      let html = ""
+      
+      // Basic Information
+      if (data.organizationName) {
+        html += `
+          <h3>📋 Organization Details</h3>
+          <table style="width:100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Organization Name:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.organizationName || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Year Established:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.yearEstablished || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Website:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.website || "N/A"}</td></tr>
+          </table>
+        `
+      }
+      
+      // Contact Person
+      if (data.ceoName) {
+        html += `
+          <h3>👤 Primary Contact Person (CEO/Director)</h3>
+          <table style="width:100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Name:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.ceoName || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.ceoEmail || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Mobile:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.ceoMobile || "N/A"}</td></tr>
+          </table>
+        `
+      }
+      
+      // Alternate Contact
+      if (data.altContactName) {
+        html += `
+          <h3>👥 Alternate Contact Person</h3>
+          <table style="width:100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Name:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.altContactName || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.altContactEmail || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Mobile:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.altContactMobile || "N/A"}</td></tr>
+          </table>
+        `
+      }
+      
+      // Registered Address
+      if (data.regAddress1) {
+        html += `
+          <h3>📍 Registered Address</h3>
+          <table style="width:100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Address Line 1:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.regAddress1 || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Address Line 2:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.regAddress2 || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>City:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.regCity || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Pin Code:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.regPinCode || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Country:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.regCountry || "N/A"}</td></tr>
+          </table>
+        `
+      }
+      
+      // Registration Details
+      if (data.iecNo || data.gstin || data.panNo) {
+        html += `
+          <h3>🏢 Registration Details</h3>
+          <table style="width:100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>IEC No:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.iecNo || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>GSTIN:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.gstin || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>PAN No:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.panNo || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>CIN No:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.cinNo || "N/A"}</td></tr>
+          </table>
+        `
+      }
+      
+      // Business Details
+      if (data.natureOfBusiness) {
+        html += `
+          <h3>💼 Business Details</h3>
+          <table style="width:100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Nature of Business:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.natureOfBusiness || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Business Constitution:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.businessConstitution || "N/A"}</td></tr>
+            <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Export Value:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${data.exportValue || "N/A"}</td></tr>
+          </table>
+        `
+      }
+      
+      return html
     }
-
-    // Header
-    blankDoc.setFillColor(232, 82, 10)
-    blankDoc.rect(0, 0, pageWidth, 20, "F")
-    blankDoc.setTextColor(255, 255, 255)
-    blankDoc.setFont("helvetica", "bold")
-    blankDoc.setFontSize(16)
-    blankDoc.text("BUYING AGENTS ASSOCIATION (BAA)", 10, 12)
-
-    yPosition = 25
-    addText("MEMBERSHIP APPLICATION FORM", 14, "bold", [232, 82, 10])
-    yPosition += 3
-    addText(`Date: ___________________`, 10)
-    yPosition += 5
-    addText("1. PERSONAL DETAILS:", 11, "bold")
-    addText(`   Name: ___________________________________________`, 10)
-    addText(`   Email: ___________________________________________`, 10)
-    addText(`   Phone: ___________________________________________`, 10)
-    yPosition += 3
-    addText("2. COMPANY DETAILS:", 11, "bold")
-    addText(`   Company Name: ___________________________________________`, 10)
-    addText(`   Business Type: ___________________________________________`, 10)
-    addText(`   Reg. Number: ___________________________________________`, 10)
-    yPosition += 3
-    addText("3. BUSINESS ADDRESS:", 11, "bold")
-    addText(`   ________________________________________________________________`, 10)
-    addText(`   ________________________________________________________________`, 10)
-    yPosition += 3
-    addText("4. MEMBERSHIP CATEGORY (Check One):", 11, "bold")
-    addText(`   ☐ Member (Joining: ₹15,000 | Annual: ₹7,500)`, 10)
-    addText(`   ☐ Associate Member (Joining: ₹8,000 | Annual: ₹4,000)`, 10)
-    addText(`   ☐ Institutional Member (Joining: ₹15,000 | Annual: ₹7,500)`, 10)
-    yPosition += 3
-    addText("5. ADDITIONAL INFORMATION:", 11, "bold")
-    addText(`   ________________________________________________________________`, 10)
-    addText(`   ________________________________________________________________`, 10)
-    yPosition += 3
-    addText("DOCUMENTS REQUIRED:", 11, "bold")
-    addText(`   ☐ Identity Proof (Aadhaar/PAN/Passport)`, 10)
-    addText(`   ☐ Business Registration Certificate`, 10)
-    addText(`   ☐ Bank Details for Payment`, 10)
-    addText(`   ☐ Company Profile/Brochure (if applicable)`, 10)
-    yPosition += 5
-    addText("DECLARATION:", 11, "bold")
-    addText(`I hereby declare that the above mentioned information is true and correct.`, 9)
-    addText(`I agree to abide by the rules and regulations of the Buying Agents Association.`, 9)
-    yPosition += 8
-    addText(`Signature: ________________________      Date: ________________________`, 10)
-    yPosition += 10
-    blankDoc.setDrawColor(200, 200, 200)
-    blankDoc.line(10, pageHeight - 20, pageWidth - 10, pageHeight - 20)
-    addText(`Please send this form along with required documents to: info@baa.org.in (CC: gs@baa.org.in)`, 8)
-
-    const blankPdfBuffer = Buffer.from(blankDoc.output("arraybuffer"))
-
-    // Send using Nodemailer
+    
+    const emailHTML = `
+      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto;">
+        <h2 style="color: #333; border-bottom: 3px solid #0066cc; padding-bottom: 10px;">🎉 Membership Application Received</h2>
+        
+        <p style="color: #555; font-size: 16px;">Dear BAA Team,</p>
+        
+        <p style="color: #555; font-size: 16px;">A new membership application has been submitted with the following details:</p>
+        
+        <h3 style="color: #0066cc; margin-top: 20px;">📌 Summary</h3>
+        <table style="width:100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr style="background-color: #f5f5f5;">
+            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Applicant/Organization:</strong></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">${fullName || "N/A"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Email:</strong></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">${email || "N/A"}</td>
+          </tr>
+          <tr style="background-color: #f5f5f5;">
+            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Mobile:</strong></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">${phone || "N/A"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Membership Category:</strong></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">${category ? category.charAt(0).toUpperCase() + category.slice(1) : "N/A"}</td>
+          </tr>
+          <tr style="background-color: #f5f5f5;">
+            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Submission Date:</strong></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">${new Date().toLocaleDateString("en-IN")}</td>
+          </tr>
+        </table>
+        
+        ${formatFormDataHTML()}
+        
+        <h3 style="color: #0066cc; margin-top: 30px;">📸 Uploaded Documents & Images</h3>
+        <div style="margin: 20px 0; padding: 20px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 8px;">
+          ${ceoPhotoBase64 ? `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #333; margin-bottom: 10px;">CEO/Representative Photo:</h4>
+              <img src="${ceoPhotoBase64}" style="max-width: 300px; max-height: 400px; border: 1px solid #ddd; border-radius: 4px;" alt="CEO Photo" />
+            </div>
+          ` : '<p style="color: #999;">No CEO photo uploaded</p>'}
+          
+          ${companyStampBase64 ? `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #333; margin-bottom: 10px;">Company Stamp:</h4>
+              <img src="${companyStampBase64}" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" alt="Company Stamp" />
+            </div>
+          ` : ''}
+          
+          ${finalCompanyStampBase64 ? `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #333; margin-bottom: 10px;">Final Company Stamp:</h4>
+              <img src="${finalCompanyStampBase64}" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" alt="Final Stamp" />
+            </div>
+          ` : ''}
+          
+          ${selfDeclSignatureBase64 ? `
+            <div>
+              <h4 style="color: #333; margin-bottom: 10px;">Signature:</h4>
+              <img src="${selfDeclSignatureBase64}" style="max-width: 300px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px;" alt="Signature" />
+            </div>
+          ` : ''}
+        </div>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 2px solid #ddd;">
+        
+        <p style="color: #666; font-size: 14px; text-align: center;">
+          <strong>Next Steps:</strong> Please review this application and contact the applicant within 3-5 business days.
+        </p>
+        
+        <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
+          This is an automated email from BAA Membership System. Please do not reply to this email.
+        </p>
+      </div>
+    `
+    
     if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       try {
         const nodemailer = await import("nodemailer")
@@ -88,47 +192,34 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        // Prepare attachments
-        const attachments: any[] = [
-          {
-            filename: "BAA-Membership-Form-Blank.pdf",
-            content: blankPdfBuffer,
-            contentType: "application/pdf",
-          },
-        ]
-
-        // Add uploaded file if provided
-        if (uploadedFileBase64 && uploadedFileName) {
-          attachments.push({
-            filename: uploadedFileName,
-            content: Buffer.from(uploadedFileBase64, "base64"),
-            contentType: "application/pdf",
-          })
-        }
-
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
           to: "info@baa.org.in",
-          cc: "gs@baa.org.in",
+          cc: "harshita.chauhan@axondevelopers.com",
           subject: `Membership Application - ${fullName}`,
-          html: `
-            <h2>Membership Application Received</h2>
-            <p>Dear BAA Team,</p>
-            <p>A new membership application has been submitted:</p>
-            <ul>
-              <li><strong>Applicant Name:</strong> ${fullName}</li>
-              <li><strong>Email:</strong> ${email}</li>
-              <li><strong>Submission Date:</strong> ${new Date().toLocaleDateString("en-IN")}</li>
-            </ul>
-            <p>Please find the following attachments:</p>
-            <ul>
-              <li>Blank Membership Form Template (for reference)</li>
-              <li>Completed Application Form (uploaded by applicant)</li>
-            </ul>
-            <p>Thank you!</p>
-          `,
-          attachments,
+          html: emailHTML,
         })
+
+        // Save to Supabase
+        try {
+          const supabase = await createClient()
+          await supabase.from("membership_applications").insert({
+            organization_name: formDataComplete.organizationName,
+            email: email,
+            phone: phone,
+            category: category,
+            form_data: formDataComplete,
+            ceo_photo: ceoPhotoBase64 || null,
+            company_stamp: companyStampBase64 || null,
+            final_company_stamp: finalCompanyStampBase64 || null,
+            signature: selfDeclSignatureBase64 || null,
+            submitted_at: new Date().toISOString(),
+            status: "submitted",
+          })
+        } catch (supabaseError) {
+          console.error("Supabase save error:", supabaseError)
+          // Don't fail email if database save fails
+        }
 
         return NextResponse.json(
           { success: true, message: "Application sent successfully" },
@@ -151,42 +242,34 @@ export async function POST(request: NextRequest) {
         const { Resend } = await import("resend")
         const resend = new Resend(process.env.RESEND_API_KEY)
 
-        const attachments: any[] = [
-          {
-            filename: "BAA-Membership-Form-Blank.pdf",
-            content: blankPdfBuffer,
-          },
-        ]
-
-        if (uploadedFileBase64 && uploadedFileName) {
-          attachments.push({
-            filename: uploadedFileName,
-            content: Buffer.from(uploadedFileBase64, "base64"),
-          })
-        }
-
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL || "noreply@baa.org.in",
-          to: "info@baa.org.in",
-          cc: "gs@baa.org.in",
+          to: "jayant.sharma.aiml22@gmail.com",
+          cc: "harshita.chauhan@axondevelopers.com",
           subject: `Membership Application - ${fullName}`,
-          html: `
-            <h2>Membership Application Received</h2>
-            <p>Dear BAA Team,</p>
-            <p>A new membership application has been submitted:</p>
-            <ul>
-              <li><strong>Applicant Name:</strong> ${fullName}</li>
-              <li><strong>Email:</strong> ${email}</li>
-              <li><strong>Submission Date:</strong> ${new Date().toLocaleDateString("en-IN")}</li>
-            </ul>
-            <p>Please find the following attachments:</p>
-            <ul>
-              <li>Blank Membership Form Template (for reference)</li>
-              <li>Completed Application Form (uploaded by applicant)</li>
-            </ul>
-          `,
-          attachments,
+          html: emailHTML,
         })
+
+        // Save to Supabase
+        try {
+          const supabase = await createClient()
+          await supabase.from("membership_applications").insert({
+            organization_name: formDataComplete.organizationName,
+            email: email,
+            phone: phone,
+            category: category,
+            form_data: formDataComplete,
+            ceo_photo: ceoPhotoBase64 || null,
+            company_stamp: companyStampBase64 || null,
+            final_company_stamp: finalCompanyStampBase64 || null,
+            signature: selfDeclSignatureBase64 || null,
+            submitted_at: new Date().toISOString(),
+            status: "submitted",
+          })
+        } catch (supabaseError) {
+          console.error("Supabase save error:", supabaseError)
+          // Don't fail email if database save fails
+        }
 
         return NextResponse.json(
           { success: true, message: "Application sent successfully" },
