@@ -104,14 +104,29 @@ const formatDate = (dateString: string) => {
   })
 }
 
+// Removes newlines from URLs and converts GitHub blob URLs to raw URLs
+const sanitizeUrl = (url: string | null | undefined): string => {
+  if (!url) return ""
+  let clean = url.replace(/[\n\r\t]/g, "").trim()
+  // Convert GitHub blob URLs to raw URLs so images load correctly
+  // e.g. https://github.com/user/repo/blob/main/img.png?raw=true
+  //   -> https://raw.githubusercontent.com/user/repo/main/img.png
+  clean = clean.replace(
+    /https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^?]+)(\?raw=true)?/,
+    "https://raw.githubusercontent.com/$1/$2/$3"
+  )
+  return clean
+}
+
 interface EventsPageProps {
-  searchParams?: {
-    show?: string
-  }
+  searchParams?: Promise<{ show?: string }>
 }
 
 export default async function EventsPage({ searchParams }: EventsPageProps) {
+  const resolvedParams = searchParams ? await searchParams : {}
+
   const supabase = await createClient()
+  if (!supabase) return null
 
   const { data: events } = await supabase
     .from("events")
@@ -132,7 +147,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           event_date: e.event_date ?? "",
           location: e.event_location ?? "",
           event_type: e.event_type ?? "Event",
-          image: e.event_image ?? defaultEvents[i % defaultEvents.length].image,
+          image: sanitizeUrl(e.event_image) || defaultEvents[i % defaultEvents.length].image,
         }))
       : defaultEvents
 
@@ -144,12 +159,12 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           description: k.description ?? "",
           session_date: k.session_date ?? "",
           location: k.location ?? "",
-          image: k.image ?? "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=600",
+          image: sanitizeUrl(k.image) || "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=600",
         }))
       : defaultKnowledgeSessions
 
-  const selectedEvent = searchParams?.show
-    ? displayEvents.find((event) => event.id.toString() === searchParams.show)
+  const selectedEvent = resolvedParams?.show
+    ? displayEvents.find((event) => event.id.toString() === resolvedParams.show)
     : null
 
   return (
@@ -191,7 +206,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               {selectedEvent && (
                 <section className="rounded-xl border border-border p-5 bg-white mb-8 shadow-sm">
                   <h2 className="text-xl font-semibold mb-3">
-                    Viewing details for "{selectedEvent.title}"
+                    Viewing details for &quot;{selectedEvent.title}&quot;
                   </h2>
                   <p className="text-sm text-muted-foreground mb-2">{selectedEvent.description}</p>
                   <div className="text-xs text-muted-foreground mb-2">
@@ -253,7 +268,6 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                       key={session.id}
                       className="rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow bg-white"
                     >
-                      {/* IMAGE FIX — object-contain so full image shows */}
                       <div className="aspect-[4/3] overflow-hidden bg-white flex items-center justify-center">
                         <img
                           src={session.image}
